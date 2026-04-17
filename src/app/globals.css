@@ -3,25 +3,49 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #2e1065;
+  --foreground: #f5f3ff;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(ellipse at top, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(249, 115, 22, 0.2) 0%, transparent 50%),
+    #1a0938;
+  min-height: 100vh;
+}
+
+/* animated starfield */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 25% 15%, white, transparent),
+    radial-gradient(1px 1px at 75% 35%, white, transparent),
+    radial-gradient(1.5px 1.5px at 50% 65%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 20% 85%, white, transparent),
+    radial-gradient(1px 1px at 90% 75%, white, transparent),
+    radial-gradient(1.5px 1.5px at 10% 45%, #f59e0b, transparent);
+  background-size: 200% 200%;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+  .text-gradient-saffron {
+    background: linear-gradient(90deg, #F97316 0%, #EA580C 50%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .text-gradient-cosmic {
+    background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 50%, #F97316 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }
