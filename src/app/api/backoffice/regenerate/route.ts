@@ -1,5 +1,5 @@
 /**
- * POST /api/admin/regenerate
+ * POST /api/backoffice/regenerate
  * Body: { readingId, language }  — regenerates the AI text for a given language.
  */
 import { NextRequest, NextResponse } from "next/server";

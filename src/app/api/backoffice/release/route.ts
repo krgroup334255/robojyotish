@@ -1,5 +1,5 @@
 /**
- * POST /api/admin/release
+ * POST /api/backoffice/release
  * Body: { readingId: string, readings?: Record<string,string> }
  * Re-renders PDFs for every language, uploads to storage, marks released.
  * Only callable by an admin user.

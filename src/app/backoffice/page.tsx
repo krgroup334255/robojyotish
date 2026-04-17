@@ -7,10 +7,10 @@ import { Inbox, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminHome() {
+export default async function BackofficeHome() {
   const supa = createClient();
   const { data: { user } } = await supa.auth.getUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/login?next=/backoffice");
 
   const admin = adminClient();
   const { data: profile } = await admin
@@ -19,7 +19,7 @@ export default async function AdminHome() {
     return (
       <main className="container py-20 text-center">
         <h1 className="text-2xl font-serif mb-2">Forbidden</h1>
-        <p className="text-white/60">Your account is not an admin.</p>
+        <p className="text-white/60">Your account is not authorized for the back-office.</p>
       </main>
     );
   }
@@ -41,7 +41,7 @@ export default async function AdminHome() {
     <main className="container py-10">
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-4xl">Admin back-office</h1>
+          <h1 className="font-serif text-4xl">Back-office</h1>
           <p className="text-white/50 text-sm">Signed in as {profile.email}</p>
         </div>
       </header>
@@ -122,7 +122,7 @@ function Section({
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    <Link href={`/admin/${r.id}`} className="text-saffron-500 hover:underline">
+                    <Link href={`/backoffice/${r.id}`} className="text-saffron-500 hover:underline">
                       review →
                     </Link>
                   </td>

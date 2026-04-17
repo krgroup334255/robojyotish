@@ -1,19 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
-import { AdminReviewEditor } from "@/components/admin/AdminReviewEditor";
+import { BackofficeReviewEditor } from "@/components/backoffice/BackofficeReviewEditor";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminReadingPage({ params }: { params: { id: string } }) {
+export default async function BackofficeReadingPage({ params }: { params: { id: string } }) {
   const supa = createClient();
   const { data: { user } } = await supa.auth.getUser();
-  if (!user) redirect(`/login?next=/admin/${params.id}`);
+  if (!user) redirect(`/login?next=/backoffice/${params.id}`);
 
   const admin = adminClient();
   const { data: profile } = await admin
     .from("profiles").select("is_admin").eq("id", user.id).single();
-  if (!profile?.is_admin) redirect("/admin");
+  if (!profile?.is_admin) redirect("/backoffice");
 
   const { data: reading } = await admin
     .from("readings").select("*").eq("id", params.id).single();
@@ -21,7 +21,7 @@ export default async function AdminReadingPage({ params }: { params: { id: strin
 
   return (
     <main className="container py-8">
-      <AdminReviewEditor reading={reading} />
+      <BackofficeReviewEditor reading={reading} />
     </main>
   );
 }

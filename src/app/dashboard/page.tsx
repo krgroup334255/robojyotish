@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Clock, CheckCircle2 } from "lucide-react";
+import { Download, Clock, CheckCircle2, Shield } from "lucide-react";
 
 const LANG_LABEL: Record<string, string> = {
   en: "English", ta: "தமிழ்", ms: "Bahasa Malaysia",
@@ -25,11 +25,29 @@ export default async function Dashboard() {
     .eq("email", user.email!)
     .order("created_at", { ascending: false });
 
+  // Check if this user is an admin to show back-office shortcut
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = !!profile?.is_admin;
+
   return (
     <main className="container py-10">
-      <header className="mb-8">
-        <h1 className="font-serif text-4xl mb-1">My readings</h1>
-        <p className="text-white/60 text-sm">Signed in as {user.email}</p>
+      <header className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-serif text-4xl mb-1">My readings</h1>
+          <p className="text-white/60 text-sm">Signed in as {user.email}</p>
+        </div>
+        {isAdmin && (
+          <Link href="/backoffice">
+            <Button variant="cosmic" size="sm">
+              <Shield className="w-4 h-4 mr-2" />
+              Open back-office
+            </Button>
+          </Link>
+        )}
       </header>
 
       {(!readings || readings.length === 0) ? (

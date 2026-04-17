@@ -2,7 +2,7 @@
  * POST /api/process — runs the post-payment pipeline.
  * Body: { readingId: string }
  * Steps: compute chart → generate readings per language → save to DB.
- * Admin review then uploads/publishes PDFs via /api/admin/release.
+ * Back-office review then uploads/publishes PDFs via /api/backoffice/release.
  *
  * This route is called from the client processing page. It streams SSE-like
  * status via a JSON array but for simplicity we return step-by-step via a

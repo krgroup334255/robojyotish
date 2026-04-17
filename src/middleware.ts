@@ -23,10 +23,17 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = req.nextUrl.pathname;
 
+  // Legacy /admin URLs → redirect permanently to /backoffice
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    const url = req.nextUrl.clone();
+    url.pathname = path.replace(/^\/admin/, "/backoffice");
+    return NextResponse.redirect(url, 308);
+  }
+
   // Protected routes (include /reading so email is verified before claiming free slot)
   const needsAuth =
     path.startsWith("/dashboard") ||
-    path.startsWith("/admin") ||
+    path.startsWith("/backoffice") ||
     path === "/reading";
   if (needsAuth && !user) {
     const url = req.nextUrl.clone();
@@ -38,5 +45,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/reading"],
+  matcher: [
+    "/dashboard/:path*",
+    "/backoffice/:path*",
+    "/admin/:path*",
+    "/reading",
+  ],
 };

@@ -32,7 +32,7 @@ type ReadingRow = {
   } | null;
 };
 
-export function AdminReviewEditor({ reading }: { reading: ReadingRow }) {
+export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
   const router = useRouter();
   const [readings, setReadings] = useState<Record<string, string>>(reading.readings ?? {});
   const [activeLang, setActiveLang] = useState<string>(reading.languages?.[0] ?? "en");
@@ -60,7 +60,7 @@ export function AdminReviewEditor({ reading }: { reading: ReadingRow }) {
   }
 
   async function regen(code: string) {
-    const d = await call("/api/admin/regenerate", { readingId: reading.id, language: code });
+    const d = await call("/api/backoffice/regenerate", { readingId: reading.id, language: code });
     if (d?.text) {
       const text = d.text;
       setReadings((prev) => ({ ...prev, [code]: text }));
@@ -69,21 +69,21 @@ export function AdminReviewEditor({ reading }: { reading: ReadingRow }) {
   }
 
   async function release() {
-    await call("/api/admin/release", { readingId: reading.id, readings });
+    await call("/api/backoffice/release", { readingId: reading.id, readings });
     setMsg("Released to customer. Redirecting...");
-    setTimeout(() => router.push("/admin"), 1500);
+    setTimeout(() => router.push("/backoffice"), 1500);
   }
 
   async function reject() {
     const notes = prompt("Reason for rejection?");
     if (!notes) return;
-    await call("/api/admin/reject", { readingId: reading.id, notes });
-    router.push("/admin");
+    await call("/api/backoffice/reject", { readingId: reading.id, notes });
+    router.push("/backoffice");
   }
 
   return (
     <div className="space-y-6">
-      <Link href="/admin" className="inline-flex items-center text-sm text-white/60 hover:text-saffron-500">
+      <Link href="/backoffice" className="inline-flex items-center text-sm text-white/60 hover:text-saffron-500">
         <ArrowLeft className="w-4 h-4 mr-1" /> back to queue
       </Link>
 
@@ -152,9 +152,9 @@ export function AdminReviewEditor({ reading }: { reading: ReadingRow }) {
             <Button
               type="button" size="sm" variant="outline"
               onClick={() => regen(activeLang)}
-              disabled={busy === "/api/admin/regenerate"}
+              disabled={busy === "/api/backoffice/regenerate"}
             >
-              {busy === "/api/admin/regenerate" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
+              {busy === "/api/backoffice/regenerate" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
               <span className="ml-2">Regenerate</span>
             </Button>
           </div>
@@ -182,7 +182,7 @@ export function AdminReviewEditor({ reading }: { reading: ReadingRow }) {
           <XCircle className="w-4 h-4 mr-2" /> Reject
         </Button>
         <Button onClick={release} disabled={!!busy}>
-          {busy === "/api/admin/release" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+          {busy === "/api/backoffice/release" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
           Approve & release
         </Button>
       </div>
