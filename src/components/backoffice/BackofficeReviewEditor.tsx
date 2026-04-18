@@ -57,9 +57,31 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error ?? "failed");
-      return d;
+      // Parse the body safely — some errors (504 timeout, 502, 500 with no body)
+      // return non-JSON or empty strings. Always handle gracefully.
+      const raw = await r.text();
+      let d: Record<string, unknown> = {};
+      try {
+        if (raw) d = JSON.parse(raw);
+      } catch {
+        // server returned HTML or empty — fall through with status-based error
+      }
+      if (!r.ok) {
+        const status = r.status;
+        const errCode = (d.error as string) ?? (d.message as string) ?? "";
+        if (status === 504 || status === 502) {
+          throw new Error(
+            "The request took longer than expected. This usually happens during Claude generation. Please try again — subsequent attempts are faster.",
+          );
+        }
+        if (status >= 500) {
+          throw new Error(
+            errCode || `Server error (${status}). Try again or contact support@robojyotish.com.`,
+          );
+        }
+        throw new Error(errCode || `Failed (${status})`);
+      }
+      return d as { text?: string };
     } catch (e) {
       setMsg(`Error: ${(e as Error).message}`);
       throw e;

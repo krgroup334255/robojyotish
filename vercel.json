@@ -4,15 +4,10 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "functions": {
-    "src/app/api/process/route.ts": {
-      "maxDuration": 300
-    },
-    "src/app/api/admin/release/route.ts": {
-      "maxDuration": 300
-    },
-    "src/app/api/admin/regenerate/route.ts": {
-      "maxDuration": 300
-    }
+    "src/app/api/process/route.ts": { "maxDuration": 300 },
+    "src/app/api/backoffice/release/route.ts": { "maxDuration": 300 },
+    "src/app/api/backoffice/regenerate/route.ts": { "maxDuration": 300 },
+    "src/app/api/backoffice/preview/route.ts": { "maxDuration": 120 }
   },
   "regions": ["sin1"]
 }

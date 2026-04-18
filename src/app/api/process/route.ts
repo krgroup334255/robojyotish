@@ -35,51 +35,68 @@ export async function POST(req: NextRequest) {
   if (error || !r) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  if (r.status !== "paid") {
+  // Allow retries from back-office: accept paid / computing_chart / generating / failed
+  const resumableStatuses = [
+    "paid",
+    "computing_chart",
+    "generating",
+    "failed",
+  ];
+  if (!resumableStatuses.includes(r.status)) {
     return NextResponse.json(
       { error: "not_paid", status: r.status },
       { status: 400 },
     );
   }
 
-  // 1. Mark computing
-  await supabase
-    .from("readings")
-    .update({ status: "computing_chart" })
-    .eq("id", readingId);
-
-  // 2. Compute chart
-  let chart;
-  try {
-    chart = computeChart({
-      date: r.birth_date,
-      time: r.birth_time.slice(0, 5),
-      lat: r.birth_place_lat,
-      lng: r.birth_place_lng,
-      timezone: r.birth_place_timezone,
-    });
-  } catch (e) {
+  // 1. Compute chart (reuse if already present)
+  let chart = r.chart_data;
+  if (!chart) {
     await supabase
       .from("readings")
-      .update({
-        status: "failed",
-        admin_notes: `Chart compute failed: ${(e as Error).message}`,
-      })
+      .update({ status: "computing_chart" })
       .eq("id", readingId);
-    return NextResponse.json({ error: "chart_failed" }, { status: 500 });
+    try {
+      chart = computeChart({
+        date: r.birth_date,
+        time: r.birth_time.slice(0, 5),
+        lat: r.birth_place_lat,
+        lng: r.birth_place_lng,
+        timezone: r.birth_place_timezone,
+      });
+    } catch (e) {
+      await supabase
+        .from("readings")
+        .update({
+          status: "failed",
+          admin_notes: `Chart compute failed: ${(e as Error).message}`,
+        })
+        .eq("id", readingId);
+      return NextResponse.json({ error: "chart_failed" }, { status: 500 });
+    }
+    await supabase
+      .from("readings")
+      .update({ chart_data: chart, status: "generating" })
+      .eq("id", readingId);
+  } else {
+    await supabase
+      .from("readings")
+      .update({ status: "generating" })
+      .eq("id", readingId);
   }
-  await supabase
-    .from("readings")
-    .update({ chart_data: chart, status: "generating" })
-    .eq("id", readingId);
 
-  // 3. Generate readings per language (sequentially, to keep rate-limit simple).
+  // 2. Generate readings per language. Save INCREMENTALLY so a timeout
+  //    doesn't lose prior languages.
   const languages: string[] = r.languages;
-  const readings: Record<string, string> = {};
+  const readings: Record<string, string> = { ...(r.readings ?? {}) };
+
   for (const code of languages) {
+    // Skip if already generated (idempotent retry)
+    if (readings[code] && readings[code].length > 100) continue;
+
     const label = LANG_MAP[code] ?? code;
     try {
-      readings[code] = await generateReading({
+      const text = await generateReading({
         chart,
         fullName: r.full_name,
         birthPlaceName: r.birth_place_name,
@@ -88,18 +105,22 @@ export async function POST(req: NextRequest) {
         lifeEventsNotes: r.life_events_notes ?? undefined,
         language: label,
       });
+      readings[code] = text;
     } catch (e) {
       readings[code] = `[Generation failed: ${(e as Error).message}]`;
     }
+
+    // Incremental save after EACH language
+    await supabase
+      .from("readings")
+      .update({ readings })
+      .eq("id", readingId);
   }
 
-  // 4. Store AI text, mark pending_review.
+  // 3. Mark pending_review once all done.
   await supabase
     .from("readings")
-    .update({
-      readings,
-      status: "pending_review",
-    })
+    .update({ status: "pending_review" })
     .eq("id", readingId);
 
   return NextResponse.json({ ok: true, status: "pending_review" });
