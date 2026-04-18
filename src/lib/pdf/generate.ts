@@ -1,8 +1,30 @@
 import PDFDocument from "pdfkit";
 import path from "path";
+import fs from "fs";
 import { SITE_NAME } from "@/lib/utils";
 
-const FONT_DIR = path.join(process.cwd(), "src/lib/pdf/fonts");
+// Vercel's build may place files at different cwd depending on runtime.
+// Try every plausible location until we find the font directory.
+function findFontDir(): string {
+  const candidates = [
+    path.join(process.cwd(), "src/lib/pdf/fonts"),
+    path.join(process.cwd(), ".next/server/src/lib/pdf/fonts"),
+    path.join(__dirname, "fonts"),
+    path.join(__dirname, "../fonts"),
+    path.join(__dirname, "../../lib/pdf/fonts"),
+  ];
+  for (const c of candidates) {
+    try {
+      if (fs.existsSync(path.join(c, "NotoSerif-Regular.ttf"))) return c;
+    } catch {
+      /* keep trying */
+    }
+  }
+  throw new Error(
+    `Font directory not found. Tried: ${candidates.join(", ")}. ` +
+      `If this is production, ensure next.config.mjs includes fonts via outputFileTracingIncludes.`,
+  );
+}
 
 interface PdfInput {
   markdown: string;
@@ -15,6 +37,7 @@ interface PdfInput {
 
 /** Render the AI-generated Markdown into a typeset PDF. Returns a Buffer. */
 export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
+  const FONT_DIR = findFontDir();
   const isTamil = /tamil|தமிழ்/i.test(input.language);
   const bodyFont = isTamil
     ? path.join(FONT_DIR, "NotoSansTamil-Regular.ttf")
@@ -22,6 +45,15 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
   const boldFont = isTamil
     ? path.join(FONT_DIR, "NotoSansTamil-Bold.ttf")
     : path.join(FONT_DIR, "NotoSerif-Bold.ttf");
+
+  // Guard: fall back to regular for bold if bold file missing.
+  const boldFontSafe = fs.existsSync(boldFont) ? boldFont : bodyFont;
+
+  // Allow empty markdown — produce a "draft placeholder" PDF rather than crash.
+  const markdown =
+    input.markdown && input.markdown.trim().length > 0
+      ? input.markdown
+      : `# ${input.clientName}'s Vedic Jyotish Reading\n\n*(Draft — content pending)*\n`;
 
   const doc = new PDFDocument({
     size: "A4",
@@ -34,7 +66,7 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
   });
 
   doc.registerFont("body", bodyFont);
-  doc.registerFont("bold", boldFont);
+  doc.registerFont("bold", boldFontSafe);
 
   return await new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -73,7 +105,7 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
     doc.fillColor("#1E1B4B");
     doc.font("body").fontSize(11);
 
-    const lines = input.markdown.split("\n");
+    const lines = markdown.split("\n");
     for (const raw of lines) {
       const line = raw.trimEnd();
       if (line.startsWith("# ")) {

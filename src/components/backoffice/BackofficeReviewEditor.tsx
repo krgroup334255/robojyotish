@@ -68,18 +68,21 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
       }
       if (!r.ok) {
         const status = r.status;
-        const errCode = (d.error as string) ?? (d.message as string) ?? "";
-        if (status === 504 || status === 502) {
+        const errCode = (d.error as string) ?? "";
+        const errMsg = (d.message as string) ?? "";
+        const combined = [errCode, errMsg].filter(Boolean).join(" — ");
+        if (status === 504) {
           throw new Error(
-            "The request took longer than expected. This usually happens during Claude generation. Please try again — subsequent attempts are faster.",
+            "The request took longer than expected. Please try again — subsequent attempts are often faster.",
           );
         }
         if (status >= 500) {
           throw new Error(
-            errCode || `Server error (${status}). Try again or contact support@robojyotish.com.`,
+            combined ||
+              `Server error (${status}). Contact support@robojyotish.com with the reading ID.`,
           );
         }
-        throw new Error(errCode || `Failed (${status})`);
+        throw new Error(combined || `Failed (${status})`);
       }
       return d as { text?: string };
     } catch (e) {
