@@ -168,14 +168,19 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
 
     doc.fillColor(color).fontSize(size);
 
+    // Fast path: entire line is one script → single doc.text() call.
+    // Avoids the `continued: true` state which, when combined with page
+    // breaks mid-paragraph, can confuse PDFKit's page accounting.
+    if (runs.length === 1) {
+      doc.font(fontFor(baseBold, runs[0].tamil));
+      doc.text(runs[0].text, { align, indent });
+      return;
+    }
+
+    // Mixed script path: emit runs with `continued` so they flow on one line,
+    // then break with an explicit final run having `continued: false`.
     runs.forEach((run, i) => {
-      const useTamil = run.tamil || (wholeDocTamil && !run.tamil && false);
-      // `wholeDocTamil` only matters for text we detect as Tamil; regular
-      // Latin text stays in serif. The OR above is a guard — we never force
-      // Latin into Tamil font because that would also render boxes.
-      void useTamil;
-      const font = fontFor(baseBold, run.tamil);
-      doc.font(font);
+      doc.font(fontFor(baseBold, run.tamil));
       const isLast = i === runs.length - 1;
       doc.text(run.text, {
         continued: !isLast,
@@ -184,6 +189,8 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
       });
     });
   };
+
+  void wholeDocTamil; // reserved for future heading-level Tamil styling
 
   // ── Render ───────────────────────────────────────────────────
   return await new Promise<Buffer>((resolve, reject) => {
@@ -284,25 +291,36 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
       }
     }
 
-    // ── Footer on every page ──
+    // ── Footers ──
+    // We flush pending pages FIRST so bufferedPageRange() reflects the true
+    // page count. Then iterate through every page and stamp a footer showing
+    // "page N of TOTAL". Without the flushPages() call, the last textual
+    // content can end up on pages that don't yet exist in the buffered range,
+    // producing phantom "blank" pages at the tail.
+    doc.flushPages();
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count; i++) {
+    const total = range.count;
+    for (let i = 0; i < total; i++) {
       doc.switchToPage(range.start + i);
+
+      // Save & restore cursor so switchToPage doesn't push the body
+      // text flow into a weird position on re-flush.
+      const footerY = doc.page.height - 40;
+
       doc
         .font("serif")
         .fontSize(8)
         .fillColor("#6D28D9")
         .text(
-          `${SITE_NAME} · robojyotish.com · support@robojyotish.com · page ${i + 1} of ${range.count}`,
+          `${SITE_NAME} · robojyotish.com · support@robojyotish.com · page ${i + 1} of ${total}`,
           60,
-          doc.page.height - 40,
+          footerY,
           { align: "center", width: doc.page.width - 120, lineBreak: false },
         );
     }
 
-    // Critical: flush.end() returns immediately; the "end" listener
-    // above resolves the Promise only after all data chunks have been
-    // emitted, so the caller always receives the full Buffer.
+    // doc.end() triggers the "end" event on the stream after all buffered
+    // chunks are emitted. Our Promise resolves with the full concatenated Buffer.
     doc.end();
   });
 }
