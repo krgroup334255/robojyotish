@@ -30,11 +30,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  // Protected routes (include /reading so email is verified before claiming free slot)
+  // Back-office pages use the staff-login page (distinct from customer login)
+  if (path.startsWith("/backoffice") && !user) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/staff-login";
+    return NextResponse.redirect(url);
+  }
+
+  // Customer-facing authenticated routes go to /login
   const needsAuth =
-    path.startsWith("/dashboard") ||
-    path.startsWith("/backoffice") ||
-    path === "/reading";
+    path.startsWith("/dashboard") || path === "/reading";
   if (needsAuth && !user) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";

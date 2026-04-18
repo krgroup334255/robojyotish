@@ -265,6 +265,10 @@ export default function Home() {
               q: "Do you offer refunds?",
               a: "If the AI fails to produce a reading or there's a technical error, we refund fully. Astrological content itself is not refundable once delivered.",
             },
+            {
+              q: "How do I get help?",
+              a: "Email us at support@robojyotish.com — we reply within 24 hours. For issues with your PDF or login, include your order reference and the email you used.",
+            },
           ].map((item, i) => (
             <Card key={i}>
               <CardContent className="p-6">
@@ -315,13 +319,28 @@ export default function Home() {
                 India. Made with respect for tradition.
               </p>
             </div>
-            <div className="flex gap-8">
+            <div className="flex gap-8 flex-wrap">
               <div>
                 <div className="text-white/80 font-medium mb-2">Product</div>
                 <ul className="space-y-1">
                   <li><a href="#features">Features</a></li>
                   <li><a href="#pricing">Pricing</a></li>
                   <li><Link href="/reading">Get reading</Link></li>
+                </ul>
+              </div>
+              <div>
+                <div className="text-white/80 font-medium mb-2">Support</div>
+                <ul className="space-y-1">
+                  <li>
+                    <a
+                      href="mailto:support@robojyotish.com"
+                      className="hover:text-saffron-500"
+                    >
+                      support@robojyotish.com
+                    </a>
+                  </li>
+                  <li><a href="#faq">FAQ</a></li>
+                  <li>Reply within 24 hours</li>
                 </ul>
               </div>
               <div>

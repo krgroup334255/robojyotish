@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond, Noto_Sans_Tamil } from "next/font/google";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import { SupportButton } from "@/components/landing/SupportButton";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -169,6 +170,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased bg-cosmic-950 text-white min-h-screen">
         {children}
+        <SupportButton />
       </body>
     </html>
   );

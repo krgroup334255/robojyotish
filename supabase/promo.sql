@@ -4,17 +4,21 @@
 -- =================================================================
 
 -- Global config (single row).
+-- NOTE: is_active defaults to FALSE — the promo counter & free slots stay
+-- hidden until you explicitly activate it (see "Activate / deactivate" at
+-- the bottom of this file).
 create table if not exists public.promo_config (
   id smallint primary key default 1,
   free_cap integer not null default 1000,
   free_claimed integer not null default 0,
-  is_active boolean not null default true,
+  is_active boolean not null default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   constraint promo_config_singleton check (id = 1)
 );
 
-insert into public.promo_config (id) values (1)
+insert into public.promo_config (id, is_active)
+  values (1, false)
 on conflict (id) do nothing;
 
 -- Record of every email that claimed a free reading (unique per email).
@@ -96,3 +100,24 @@ end;
 $$;
 
 grant execute on function public.claim_free_slot(text, uuid) to service_role;
+
+-- =================================================================
+-- Activate / deactivate the launch promo (run these manually)
+-- =================================================================
+-- To START the first-1000-free launch (ONLY once your production domain
+-- robojyotish.com is live and all 9 env vars on Vercel are correct):
+--
+--   update public.promo_config set is_active = true where id = 1;
+--
+-- To PAUSE / STOP the promo (e.g. cap reached or you want to resume billing):
+--
+--   update public.promo_config set is_active = false where id = 1;
+--
+-- To CHANGE the cap (e.g. extend to 2000):
+--
+--   update public.promo_config set free_cap = 2000 where id = 1;
+--
+-- To RESET the counter (rarely needed):
+--
+--   update public.promo_config set free_claimed = 0 where id = 1;
+--   truncate public.promo_claims;

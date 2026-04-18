@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function BackofficeHome() {
   const supa = createClient();
   const { data: { user } } = await supa.auth.getUser();
-  if (!user) redirect("/login?next=/backoffice");
+  if (!user) redirect("/staff-login");
 
   const admin = adminClient();
   const { data: profile } = await admin
@@ -19,7 +19,19 @@ export default async function BackofficeHome() {
     return (
       <main className="container py-20 text-center">
         <h1 className="text-2xl font-serif mb-2">Forbidden</h1>
-        <p className="text-white/60">Your account is not authorized for the back-office.</p>
+        <p className="text-white/60 mb-6">
+          Your account is not authorised for the back-office.
+        </p>
+        <p className="text-sm text-white/50">
+          Contact{" "}
+          <a
+            href="mailto:support@robojyotish.com"
+            className="text-saffron-500 hover:underline"
+          >
+            support@robojyotish.com
+          </a>{" "}
+          if you believe this is an error.
+        </p>
       </main>
     );
   }
