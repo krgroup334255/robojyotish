@@ -103,10 +103,18 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
   // even when a line has no Tamil chars (so styling stays consistent).
   const wholeDocTamil = /tamil|தமிழ்/i.test(input.language);
 
-  const markdown =
+  // Normalise markdown: collapse runs of blank lines, strip trailing blanks.
+  // Prevents Claude's occasional multi-newline gaps from silently generating
+  // empty pages at the tail of the document.
+  const rawMd =
     input.markdown && input.markdown.trim().length > 0
       ? input.markdown
       : `# ${input.clientName}'s Vedic Jyotish Reading\n\n*(Draft — content pending)*\n`;
+  const markdown = rawMd
+    .replace(/\r\n/g, "\n")          // normalise Windows line endings
+    .replace(/\n{3,}/g, "\n\n")       // at most ONE blank line between blocks
+    .replace(/[ \t]+\n/g, "\n")       // strip trailing spaces on each line
+    .replace(/\n+$/, "");             // strip trailing blank lines entirely
 
   // 60pt top/side margins, 80pt bottom to reserve room for the footer.
   const MARGIN = { top: 60, left: 60, right: 60, bottom: 80 };
