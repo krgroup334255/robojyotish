@@ -87,18 +87,37 @@ export default async function Dashboard() {
                   </div>
                 </div>
 
-                {r.status === "released" && r.pdf_paths && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {Object.entries(r.pdf_paths).map(([code]) => (
-                      <form key={code} action="/api/download" method="POST">
-                        <input type="hidden" name="readingId" value={r.id} />
-                        <input type="hidden" name="language" value={code} />
-                        <Button type="submit" size="sm" variant="secondary">
-                          <Download className="w-4 h-4 mr-2" />
-                          Download {LANG_LABEL[code] ?? code}
-                        </Button>
-                      </form>
-                    ))}
+                {r.status === "released" && (
+                  <div className="mt-4">
+                    {Object.keys(r.pdf_paths ?? {}).length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(r.pdf_paths).map(([code]) => (
+                          <form key={code} action="/api/download" method="POST">
+                            <input type="hidden" name="readingId" value={r.id} />
+                            <input type="hidden" name="language" value={code} />
+                            <Button type="submit" size="sm" variant="secondary">
+                              <Download className="w-4 h-4 mr-2" />
+                              Download {LANG_LABEL[code] ?? code}
+                            </Button>
+                          </form>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+                        Your reading was marked ready but the PDF files are
+                        missing — this is usually a temporary issue. Please
+                        email{" "}
+                        <a
+                          href="mailto:support@robojyotish.com"
+                          className="text-saffron-500 hover:underline"
+                        >
+                          support@robojyotish.com
+                        </a>{" "}
+                        with your order ID{" "}
+                        <span className="font-mono">{r.id.slice(0, 8)}</span>{" "}
+                        and we&apos;ll regenerate it for you.
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
