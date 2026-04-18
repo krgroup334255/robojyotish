@@ -3,11 +3,13 @@ import path from "path";
 import fs from "fs";
 import { SITE_NAME } from "@/lib/utils";
 
-// Vercel's build may place files at different cwd depending on runtime.
-// Try every plausible location until we find the font directory.
+// Next.js always ships `public/` to Vercel — prefer that.
+// Fall back to `src/lib/pdf/fonts` for local dev and older deploys.
 function findFontDir(): string {
   const candidates = [
+    path.join(process.cwd(), "public/fonts"),
     path.join(process.cwd(), "src/lib/pdf/fonts"),
+    path.join(process.cwd(), ".next/server/public/fonts"),
     path.join(process.cwd(), ".next/server/src/lib/pdf/fonts"),
     path.join(__dirname, "fonts"),
     path.join(__dirname, "../fonts"),
@@ -22,7 +24,7 @@ function findFontDir(): string {
   }
   throw new Error(
     `Font directory not found. Tried: ${candidates.join(", ")}. ` +
-      `If this is production, ensure next.config.mjs includes fonts via outputFileTracingIncludes.`,
+      `If this is production, ensure fonts exist in public/fonts/.`,
   );
 }
 

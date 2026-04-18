@@ -12,18 +12,38 @@ const LANG_LABEL: Record<string, string> = {
 
 export const dynamic = "force-dynamic";
 
-export default async function Dashboard() {
+const DOWNLOAD_ERRORS: Record<string, string> = {
+  missing_params: "The download link was malformed. Try again from your list.",
+  reading_not_found: "That reading could not be found.",
+  forbidden: "You're signed in with a different email than the one on this order. Please sign in with the email you used to order.",
+  not_ready: "This reading isn't ready for download yet. Our team is still reviewing it.",
+  no_pdf: "The PDF file is missing. Please email support@robojyotish.com — we'll regenerate it.",
+  sign_failed: "We couldn't generate the download link. Try again in a moment.",
+  internal_error: "Something went wrong while preparing the download. Please contact support@robojyotish.com.",
+};
+
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
   const supa = createClient();
   const { data: { user } } = await supa.auth.getUser();
   if (!user) redirect("/login?next=/dashboard");
 
-  // Find readings via email (anonymous orders) OR user_id
+  // Find readings via email (case-insensitive) — Supabase sometimes stores
+  // the signup email with different casing than what the user typed.
   const admin = adminClient();
+  const userEmail = (user.email ?? "").toLowerCase().trim();
   const { data: readings } = await admin
     .from("readings")
     .select("id, full_name, status, languages, pdf_paths, created_at, birth_date, birth_place_name")
-    .eq("email", user.email!)
+    .ilike("email", userEmail)
     .order("created_at", { ascending: false });
+
+  const downloadError = searchParams.error
+    ? DOWNLOAD_ERRORS[searchParams.error] ?? `Download error: ${searchParams.error}`
+    : null;
 
   // Check if this user is an admin to show back-office shortcut
   const { data: profile } = await admin
@@ -35,6 +55,11 @@ export default async function Dashboard() {
 
   return (
     <main className="container py-10">
+      {downloadError && (
+        <div className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+          {downloadError}
+        </div>
+      )}
       <header className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-4xl mb-1">My readings</h1>
