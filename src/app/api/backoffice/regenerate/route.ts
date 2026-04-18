@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
-import { generateReading } from "@/lib/claude/reading";
+import { generateReading, ageFromBirthDate } from "@/lib/claude/reading";
 
 const LANG_LABEL: Record<string, string> = {
   en: "English", ta: "Tamil", ms: "Bahasa Malaysia",
@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         lifeEvents: r.life_events ?? [],
         lifeEventsNotes: r.life_events_notes ?? undefined,
         language: LANG_LABEL[code] ?? code,
+        ageYears: ageFromBirthDate(r.birth_date),
       });
     } catch (e) {
       console.error("[regenerate] Claude error", e);

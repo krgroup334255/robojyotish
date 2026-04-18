@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { computeChart } from "@/lib/jyotish/chart";
-import { generateReading } from "@/lib/claude/reading";
+import { generateReading, ageFromBirthDate } from "@/lib/claude/reading";
 
 const LANG_MAP: Record<string, string> = {
   en: "English",
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
         lifeEvents: r.life_events ?? [],
         lifeEventsNotes: r.life_events_notes ?? undefined,
         language: label,
+        ageYears: ageFromBirthDate(r.birth_date),
       });
       readings[code] = text;
     } catch (e) {
