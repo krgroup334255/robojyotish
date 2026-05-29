@@ -11,10 +11,12 @@ const nextConfig = {
   // generation fails at runtime with "ENOENT" on the missing TTF or .se1.
   outputFileTracingIncludes: {
     "/api/backoffice/release": [
+      "./public/fonts/**/*",
       "./src/lib/pdf/fonts/**/*",
       "./ephe/**/*",
     ],
     "/api/backoffice/preview": [
+      "./public/fonts/**/*",
       "./src/lib/pdf/fonts/**/*",
     ],
     "/api/process": [
