@@ -150,7 +150,7 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error ?? `HTTP ${res.status}`);
+        throw new Error([d.error, d.message].filter(Boolean).join(" — ") || `HTTP ${res.status}`);
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

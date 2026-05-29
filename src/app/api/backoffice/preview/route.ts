@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       birthPlace: r.birth_place_name,
     });
 
-    return new NextResponse(pdf as unknown as BodyInit, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="preview-${readingId}-${language}.pdf"`,
