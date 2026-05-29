@@ -144,7 +144,7 @@ NO prose. NO bullet points. NO section header. NO preamble. ONLY the 9 pipe-deli
 const TABLE_A2_HEADER =
   `## 2. Planetary Positions\n\n` +
   `| Planet | Rasi (Sign) | Degree | Nakshatra | House | Retro |\n` +
-  `|--------|-------------|--------|-----------|-------|-------|\n`;
+  `|--------|-------------|--------|-----------|-------|-------|`;
 
 // Batch B1: prose sections 5, 6, 8 (section 7 table is in its own call)
 const BATCH_B1_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
@@ -177,7 +177,7 @@ NO prose. NO bullet points. NO section header. NO preamble. ONLY the pipe-delimi
 const TABLE_B2_HEADER =
   `## 7. Dasha Completion Timeline\n\n` +
   `| Mahadasha Lord | Start Date | End Date | Character for This Native |\n` +
-  `|----------------|------------|----------|--------------------------|\n`;
+  `|----------------|------------|----------|--------------------------|`;
 
 // Batch C1: sections 9-12
 const BATCH_C1_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
