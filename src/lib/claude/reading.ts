@@ -179,8 +179,8 @@ const TABLE_B2_HEADER =
   `| Mahadasha Lord | Start Date | End Date | Character for This Native |\n` +
   `|----------------|------------|----------|--------------------------|\n`;
 
-// Batch C: sections 9-13
-const BATCH_C_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
+// Batch C1: sections 9-12
+const BATCH_C1_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
 
 ## 9. Professional Life, Career & Business
 2 paragraphs only. 10th house lord + occupants, suitable career domains with planetary logic.
@@ -199,10 +199,15 @@ CONDITIONAL — include IN FULL ONLY IF the native is under 21.
 If under 21: 2 paragraphs on suitable study fields and dasha timing, plus one study remedy.
 If 21 or older: write exactly one line:
 "Education phase has concluded — see Section 9 (Career) for vocational guidance based on
-continued learning."
+continued learning."`;
+
+// Batch C2: Section 13 only — gets its own full token budget so no truncation
+// even when the client raises many concerns.
+const BATCH_C2_PROMPT = `Generate ONLY Section 13 of the reading (nothing else):
 
 ## 13. Additional Concerns Raised by the Client
-Address EACH life-event concern in 2-3 sentences with specific chart context.
+Address EACH life-event concern listed below in 2-3 sentences with specific chart context.
+Do NOT omit or abbreviate any concern — write all of them in full.
 Then ONE paragraph of remedies (upayas / பரிகாரம்): one mantra (Sanskrit + transliteration),
 one gemstone note (caution: consult a Jyotishi before wearing), one fasting/charity day,
 one temple suggestion.
@@ -318,21 +323,23 @@ Every section header and body MUST be in ${language}.`;
     return text;
   }
 
-  // ── Fire all 5 batches concurrently ───────────────────────────
-  // A1 = sections 1, 3, 4 (prose)
-  // A2 = section 2 (planetary table — dedicated prefilled call)
-  // B1 = sections 5, 6, 8 (prose)
-  // B2 = section 7 (dasha table — dedicated prefilled call)
-  // C  = sections 9-13
-  console.info(`[generateReading] Starting 5 concurrent batches for ${fullName} (${language})`);
-  const [batchA1, batchA2, batchB1, batchB2, batchC] = await Promise.all([
+  // ── Fire all 6 batches concurrently ───────────────────────────
+  // A1  = sections 1, 3, 4 (prose)
+  // A2  = section 2 (planetary table — dedicated prefilled call)
+  // B1  = sections 5, 6, 8 (prose)
+  // B2  = section 7 (dasha table — dedicated prefilled call)
+  // C1  = sections 9-12
+  // C2  = section 13 only (own full budget — prevents truncation with many concerns)
+  console.info(`[generateReading] Starting 6 concurrent batches for ${fullName} (${language})`);
+  const [batchA1, batchA2, batchB1, batchB2, batchC1, batchC2] = await Promise.all([
     callBatch(BATCH_A1_PROMPT),
     callBatch(BATCH_A2_PROMPT, TABLE_A2_HEADER),
     callBatch(BATCH_B1_PROMPT),
     callBatch(BATCH_B2_PROMPT, TABLE_B2_HEADER),
-    callBatch(BATCH_C_PROMPT),
+    callBatch(BATCH_C1_PROMPT),
+    callBatch(BATCH_C2_PROMPT),
   ]);
-  console.info(`[generateReading] All 5 batches complete.`);
+  console.info(`[generateReading] All 6 batches complete.`);
 
   // ── Stitch in correct document order: 1, 2, 3, 4, 5, 6, 7, 8, 9-13 ──
   // Remove stray horizontal-rule lines (---) Claude sometimes appends at
@@ -356,12 +363,13 @@ Every section header and body MUST be in ${language}.`;
   const sec8Part = sec8Idx > 0 ? b1.slice(sec8Idx) : "";
 
   return [
-    sec1Part,           // section 1
-    stripHr(batchA2),   // section 2 — planetary table (prefill-locked)
-    sec34Part,          // sections 3, 4
-    sec56Part,          // sections 5, 6
-    stripHr(batchB2),   // section 7 — dasha table (prefill-locked)
-    sec8Part,           // section 8
-    stripHr(batchC),    // sections 9-13
+    sec1Part,            // section 1
+    stripHr(batchA2),    // section 2 — planetary table (prefill-locked)
+    sec34Part,           // sections 3, 4
+    sec56Part,           // sections 5, 6
+    stripHr(batchB2),    // section 7 — dasha table (prefill-locked)
+    sec8Part,            // section 8
+    stripHr(batchC1),    // sections 9-12
+    stripHr(batchC2),    // section 13 — Additional Concerns (dedicated budget)
   ].filter(Boolean).join("\n\n");
 }
