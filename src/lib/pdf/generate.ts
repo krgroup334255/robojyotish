@@ -19,27 +19,29 @@ import path from "path";
 import fs from "fs";
 import { SITE_NAME } from "@/lib/utils";
 
-// ── Font resolution ────────────────────────────────────────────
-function findFontDir(): string {
+// ── Font loading ────────────────────────────────────────────────
+// Read font files into Buffer at call time, searching multiple candidate
+// directories. Passing a Buffer (not a file path) to PDFKit's registerFont
+// is the only approach that works reliably on Vercel serverless lambdas,
+// because the filesystem layout inside a lambda differs from process.cwd().
+function loadFont(filename: string): Buffer {
   const candidates = [
-    path.join(process.cwd(), "public/fonts"),
-    path.join(process.cwd(), "src/lib/pdf/fonts"),
-    path.join(process.cwd(), ".next/server/public/fonts"),
-    path.join(process.cwd(), ".next/server/src/lib/pdf/fonts"),
-    path.join(__dirname, "fonts"),
-    path.join(__dirname, "../fonts"),
-    path.join(__dirname, "../../lib/pdf/fonts"),
+    path.join(process.cwd(), "public/fonts", filename),
+    path.join(process.cwd(), "src/lib/pdf/fonts", filename),
+    path.join(__dirname, "fonts", filename),
+    path.join(__dirname, "../fonts", filename),
+    path.join(__dirname, "../../lib/pdf/fonts", filename),
+    path.join(__dirname, "../../public/fonts", filename),
   ];
   for (const c of candidates) {
     try {
-      if (fs.existsSync(path.join(c, "NotoSerif-Regular.ttf"))) return c;
+      if (fs.existsSync(c)) return fs.readFileSync(c);
     } catch {
       /* keep trying */
     }
   }
   throw new Error(
-    `Font directory not found. Tried: ${candidates.join(", ")}. ` +
-      `Ensure fonts are in public/fonts/.`,
+    `Font file not found: ${filename}. Tried: ${candidates.join(", ")}`,
   );
 }
 
@@ -357,15 +359,13 @@ interface PdfInput {
 }
 
 export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
-  const FONT_DIR = findFontDir();
-  const serifRegular = path.join(FONT_DIR, "NotoSerif-Regular.ttf");
-  const serifBold = path.join(FONT_DIR, "NotoSerif-Bold.ttf");
-  const tamilRegular = path.join(FONT_DIR, "NotoSansTamil-Regular.ttf");
-  const tamilBold = path.join(FONT_DIR, "NotoSansTamil-Bold.ttf");
-
-  // Fall back to regular if any bold is missing — we must never crash.
-  const boldSerif = fs.existsSync(serifBold) ? serifBold : serifRegular;
-  const boldTamil = fs.existsSync(tamilBold) ? tamilBold : tamilRegular;
+  // Load fonts as Buffers — works on Vercel lambdas where file paths
+  // relative to process.cwd() are unreliable for externally-bundled modules.
+  const serifRegularBuf = loadFont("NotoSerif-Regular.ttf");
+  const serifBoldBuf = (() => { try { return loadFont("NotoSerif-Bold.ttf"); } catch { return serifRegularBuf; } })();
+  const tamilRegularBuf = loadFont("NotoSansTamil-Regular.ttf");
+  const tamilBoldBuf = (() => { try { return loadFont("NotoSansTamil-Bold.ttf"); } catch { return tamilRegularBuf; } })();
+  const devanagariRegularBuf = (() => { try { return loadFont("NotoSansDevanagari-Regular.ttf"); } catch { return null; } })();
 
   // Whole-document Tamil context (heading-level decision). If the
   // requested language is Tamil, default everything to Tamil font
@@ -399,15 +399,14 @@ export async function renderReadingPdf(input: PdfInput): Promise<Buffer> {
     },
   });
 
-  // ── Register fonts ──
-  const devaRegular = path.join(FONT_DIR, "NotoSansDevanagari-Regular.ttf");
-  const hasDevanagari = fs.existsSync(devaRegular);
+  // ── Register fonts (pass Buffer — not path — for Vercel lambda compat) ──
+  const hasDevanagari = devanagariRegularBuf !== null;
 
-  doc.registerFont("serif", serifRegular);
-  doc.registerFont("serif-bold", boldSerif);
-  doc.registerFont("tamil", tamilRegular);
-  doc.registerFont("tamil-bold", boldTamil);
-  if (hasDevanagari) doc.registerFont("devanagari", devaRegular);
+  doc.registerFont("serif", serifRegularBuf);
+  doc.registerFont("serif-bold", serifBoldBuf);
+  doc.registerFont("tamil", tamilRegularBuf);
+  doc.registerFont("tamil-bold", tamilBoldBuf);
+  if (hasDevanagari) doc.registerFont("devanagari", devanagariRegularBuf!);
 
   // Helper: pick the right font for a script run
   const fontFor = (bold: boolean, script: ScriptRun["script"]): string => {
