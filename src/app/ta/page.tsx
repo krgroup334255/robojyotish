@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bot, Sparkles, Star, Clock, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { PRICE_MYR, SITE_NAME } from "@/lib/utils";
+import { SITE_NAME } from "@/lib/utils";
 import { LaunchBanner } from "@/components/landing/LaunchBanner";
 import { PromoCounter } from "@/components/landing/PromoCounter";
 
@@ -47,15 +47,6 @@ export default function HomeTamil() {
         <p className="max-w-2xl mx-auto text-lg text-white/70 mb-6">
           சுவிஸ் எபிமெரிஸ் மற்றும் Claude AI-ஐ பயன்படுத்தி துல்லியமான ஹிந்து ஜோதிட பலன் —
           தமிழில் அழகான PDF-ஆக.
-        </p>
-        <p className="text-2xl font-serif mb-8">
-          <span className="line-through text-white/40 mr-2">
-            RM{PRICE_MYR.toFixed(2)}
-          </span>
-          <span className="text-gradient-saffron font-bold">இலவசம்</span>
-          <span className="text-white/70 text-base ml-2">
-            · முதல் 1,000 பயனர்களுக்கு
-          </span>
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/reading">

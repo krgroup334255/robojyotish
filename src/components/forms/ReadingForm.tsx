@@ -42,10 +42,8 @@ interface Place {
 
 export function ReadingForm({
   defaultEmail = "",
-  isFree = false,
 }: {
   defaultEmail?: string;
-  isFree?: boolean;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -331,23 +329,13 @@ export function ReadingForm({
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
               Creating your reading...
             </>
-          ) : isFree ? (
-            <>
-              <Sparkles className="w-5 h-5 mr-2" />
-              Claim my FREE launch reading
-            </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 mr-2" />
-              Continue to payment — RM19.90
+              Get my Jyotish reading
             </>
           )}
         </Button>
-        {isFree && (
-          <p className="text-xs text-white/50 mt-2">
-            No credit card required. One free reading per email during launch.
-          </p>
-        )}
       </div>
     </form>
   );

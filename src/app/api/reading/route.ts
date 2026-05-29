@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       life_events_notes: d.lifeEventsNotes,
       languages: d.languages,
       status: "pending_payment",
-      amount_cents: Number(process.env.STRIPE_PRICE_MYR_CENTS ?? 1990),
+      amount_cents: 0,
       currency: "myr",
     })
     .select("id")

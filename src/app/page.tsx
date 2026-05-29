@@ -10,12 +10,10 @@ import {
   Star,
   Clock,
   Zap,
-  CheckCircle2,
   Globe,
 } from "lucide-react";
-import { PRICE_MYR, SITE_NAME } from "@/lib/utils";
+import { SITE_NAME } from "@/lib/utils";
 import { LaunchBanner } from "@/components/landing/LaunchBanner";
-import { PromoCounter } from "@/components/landing/PromoCounter";
 import { ShareBar } from "@/components/landing/ShareBar";
 
 export default function Home() {
@@ -35,7 +33,6 @@ export default function Home() {
         <nav className="hidden md:flex items-center gap-8 text-sm text-white/80">
           <a href="#how-it-works" className="hover:text-saffron-500">How it works</a>
           <a href="#features" className="hover:text-saffron-500">Features</a>
-          <a href="#pricing" className="hover:text-saffron-500">Pricing</a>
           <a href="#faq" className="hover:text-saffron-500">FAQ</a>
         </nav>
         <div className="flex items-center gap-3">
@@ -43,7 +40,7 @@ export default function Home() {
             <Button variant="ghost" size="sm">Login</Button>
           </Link>
           <Link href="/reading">
-            <Button size="sm">Claim FREE reading</Button>
+            <Button size="sm">Get my reading</Button>
           </Link>
         </div>
       </header>
@@ -64,20 +61,11 @@ export default function Home() {
           and Anthropic&apos;s Claude AI. Delivered as a beautiful PDF in{" "}
           <strong>English, Tamil, or Bahasa Malaysia</strong>.
         </p>
-        <p className="max-w-2xl mx-auto text-2xl font-serif mb-8 text-balance">
-          <span className="line-through text-white/40 mr-2">
-            RM{PRICE_MYR.toFixed(2)}
-          </span>
-          <span className="text-gradient-saffron font-bold">FREE</span>
-          <span className="text-white/70 text-base ml-2">
-            during our launch — first 1,000 readings
-          </span>
-        </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/reading">
             <Button size="lg" className="w-full sm:w-auto text-base">
               <Sparkles className="w-5 h-5 mr-2" />
-              Claim my FREE reading
+              Get my Jyotish reading
             </Button>
           </Link>
           <a href="#how-it-works">
@@ -85,9 +73,6 @@ export default function Home() {
               How it works
             </Button>
           </a>
-        </div>
-        <div className="mt-8 flex justify-center">
-          <PromoCounter />
         </div>
         <div className="mt-10 flex items-center justify-center gap-8 text-sm text-white/60 flex-wrap">
           <div className="flex items-center gap-1.5"><Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />4.8 / 5</div>
@@ -104,8 +89,7 @@ export default function Home() {
         </h2>
         <p className="text-center text-white/60 max-w-2xl mx-auto mb-12">
           Traditional Jyotish rigour meets modern AI. Astronomically accurate,
-          beautifully written, and one of the most affordable readings available
-          anywhere in the world.
+          beautifully written, and deeply personalised for you.
         </p>
         <div className="grid md:grid-cols-3 gap-6">
           {[
@@ -137,7 +121,7 @@ export default function Home() {
             {
               icon: <Globe className="w-8 h-8 text-saffron-500" />,
               title: "Made for SE Asia",
-              body: "Built for Hindu-Indian communities in Malaysia, Singapore & India. FPX, GrabPay, Visa/Mastercard supported via Stripe.",
+              body: "Built for Hindu-Indian communities in Malaysia, Singapore & India. English, Tamil, and Bahasa Malaysia fully supported.",
             },
           ].map((f, i) => (
             <Card key={i}>
@@ -159,7 +143,7 @@ export default function Home() {
         <div className="grid md:grid-cols-5 gap-4">
           {[
             { n: "1", t: "Share details", d: "Name, birth date/time, birth city & current life events." },
-            { n: "2", t: "Pay RM19.90", d: "Secure Stripe checkout. FPX, GrabPay & cards accepted." },
+            { n: "2", t: "Submit your details", d: "We verify your birth details and prepare your chart." },
             { n: "3", t: "Chart computed", d: "Swiss Ephemeris calculates planetary positions & dasha." },
             { n: "4", t: "AI generates", d: "Claude AI writes your personalised reading in your chosen language(s)." },
             { n: "5", t: "Download PDF", d: "After our astrologer reviews, login with email OTP to download." },
@@ -174,63 +158,6 @@ export default function Home() {
               </CardContent>
             </Card>
           ))}
-        </div>
-      </section>
-
-      {/* ─── PRICING ─── */}
-      <section id="pricing" className="container py-20">
-        <div className="max-w-md mx-auto">
-          <Card className="border-saffron-500/40 relative overflow-hidden">
-            <div className="absolute top-3 -right-12 rotate-45 bg-saffron-500 text-white text-xs font-bold py-1 px-12 shadow-lg">
-              LAUNCH SPECIAL
-            </div>
-            <CardContent className="p-10 text-center">
-              <div className="text-sm uppercase tracking-widest text-saffron-500 mb-2">
-                One-time reading
-              </div>
-              <div className="flex items-baseline justify-center gap-3 mb-1">
-                <span className="text-3xl line-through text-white/40">
-                  RM{PRICE_MYR.toFixed(2)}
-                </span>
-                <span className="text-6xl font-bold text-gradient-saffron">
-                  FREE
-                </span>
-              </div>
-              <p className="text-white/60 text-sm mb-2">
-                First 1,000 users · No credit card required
-              </p>
-              <div className="mb-6">
-                <PromoCounter />
-              </div>
-              <ul className="text-left space-y-3 mb-8">
-                {[
-                  "15-20 page personalised PDF",
-                  "D1 Rasi + Navamsa D9 chart analysis",
-                  "Current Mahadasha & Antardasha",
-                  "Career, marriage, wealth, health guidance",
-                  "Remedies & gemstone recommendations",
-                  "English + any extra language (Tamil, Malay, etc.)",
-                  "Secure 2FA login to download anytime",
-                  "Manual astrologer review before release",
-                ].map((b, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-white/80">
-                    <CheckCircle2 className="w-5 h-5 text-saffron-500 flex-shrink-0 mt-0.5" />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/reading">
-                <Button size="lg" className="w-full">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Claim my FREE reading
-                </Button>
-              </Link>
-              <p className="text-xs text-white/50 mt-3">
-                After launch promo ends, readings will be RM{PRICE_MYR.toFixed(2)}
-                . One free reading per email.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
@@ -260,10 +187,6 @@ export default function Home() {
             {
               q: "Is my data safe?",
               a: "Yes. We use Supabase with email-OTP 2-factor authentication. Your birth data and PDF are stored in a private bucket only you (via OTP) can access.",
-            },
-            {
-              q: "Do you offer refunds?",
-              a: "If the AI fails to produce a reading or there's a technical error, we refund fully. Astrological content itself is not refundable once delivered.",
             },
             {
               q: "How do I get help?",
@@ -299,7 +222,7 @@ export default function Home() {
             <Link href="/reading">
               <Button size="lg">
                 <Sparkles className="w-5 h-5 mr-2" />
-                Claim my FREE reading
+                Get my Jyotish reading
               </Button>
             </Link>
           </CardContent>
@@ -324,7 +247,6 @@ export default function Home() {
                 <div className="text-white/80 font-medium mb-2">Product</div>
                 <ul className="space-y-1">
                   <li><a href="#features">Features</a></li>
-                  <li><a href="#pricing">Pricing</a></li>
                   <li><Link href="/reading">Get reading</Link></li>
                 </ul>
               </div>

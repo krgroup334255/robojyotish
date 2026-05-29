@@ -14,6 +14,11 @@ import {
   FileText,
   AlertTriangle,
   Play,
+  Pencil,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Plus,
 } from "lucide-react";
 
 const LANG_LABEL: Record<string, string> = {
@@ -47,6 +52,21 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
   const [activeLang, setActiveLang] = useState<string>(reading.languages?.[0] ?? "en");
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Submission editor state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: reading.full_name,
+    birthDate: reading.birth_date,
+    birthTime: reading.birth_time.slice(0, 5),
+    birthPlaceName: reading.birth_place_name,
+    birthPlaceTimezone: reading.birth_place_timezone,
+    currentLocation: reading.current_location ?? "",
+    lifeEventsNotes: reading.life_events_notes ?? "",
+    lifeEvents: reading.life_events ?? [],
+  });
+  const [newLifeEvent, setNewLifeEvent] = useState("");
+  const [regenAfterSave, setRegenAfterSave] = useState(false);
 
   async function call(path: string, body: object): Promise<{ text?: string } | undefined> {
     setBusy(path);
@@ -163,6 +183,52 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
     }
   }
 
+  async function saveSubmission() {
+    setBusy("/api/backoffice/edit-submission");
+    setMsg(null);
+    try {
+      const r = await fetch("/api/backoffice/edit-submission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          readingId: reading.id,
+          fullName: editForm.fullName,
+          birthDate: editForm.birthDate,
+          birthTime: editForm.birthTime,
+          birthPlaceName: editForm.birthPlaceName,
+          birthPlaceTimezone: editForm.birthPlaceTimezone,
+          currentLocation: editForm.currentLocation,
+          lifeEventsNotes: editForm.lifeEventsNotes,
+          lifeEvents: editForm.lifeEvents,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error ?? d.message ?? `HTTP ${r.status}`);
+      setEditOpen(false);
+
+      if (regenAfterSave) {
+        // Auto-kick off pipeline after saving
+        setMsg("Submission updated — starting pipeline regeneration...");
+        const res = await fetch("/api/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ readingId: reading.id }),
+        });
+        const pd = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(pd.error ?? pd.message ?? `HTTP ${res.status}`);
+        setMsg("Pipeline started. Page will refresh shortly...");
+        setTimeout(() => router.refresh(), 3000);
+      } else {
+        setMsg("Submission updated. Chart and readings have been reset — click 'Run pipeline now' to regenerate.");
+        router.refresh();
+      }
+    } catch (e) {
+      setMsg(`Error: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const activeMarkdown = readings[activeLang] ?? "";
   const hasChart = !!reading.chart_data;
   const hasContent = activeMarkdown.trim().length > 50;
@@ -198,6 +264,221 @@ export function BackofficeReviewEditor({ reading }: { reading: ReadingRow }) {
               {reading.life_events_notes && (
                 <p className="text-sm text-white/70 mt-2 italic">“{reading.life_events_notes}”</p>
               )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Edit submission details ── */}
+      <Card className="border-cosmic-500/30">
+        <CardContent className="p-6">
+          <button
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => setEditOpen((v) => !v)}
+          >
+            <div className="flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-saffron-500" />
+              <span className="font-serif text-lg">Edit submission details</span>
+            </div>
+            {editOpen ? (
+              <ChevronUp className="w-4 h-4 text-white/50" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-white/50" />
+            )}
+          </button>
+          <p className="text-xs text-white/50 mt-1">
+            Correct any details the customer entered incorrectly. Saving will
+            reset the chart and readings so the pipeline can re-run.
+          </p>
+
+          {editOpen && (
+            <div className="mt-5 space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <Field label="Full name">
+                  <input
+                    type="text"
+                    value={editForm.fullName}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, fullName: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                </Field>
+                <Field label="Birth date (YYYY-MM-DD)">
+                  <input
+                    type="date"
+                    value={editForm.birthDate}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, birthDate: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                </Field>
+                <Field label="Birth time (HH:mm)">
+                  <input
+                    type="time"
+                    value={editForm.birthTime}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, birthTime: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                </Field>
+                <Field label="Birth place name">
+                  <input
+                    type="text"
+                    value={editForm.birthPlaceName}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        birthPlaceName: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                </Field>
+                <Field label="Timezone (e.g. Asia/Kuala_Lumpur)">
+                  <input
+                    type="text"
+                    value={editForm.birthPlaceTimezone}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        birthPlaceTimezone: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                </Field>
+                <Field label="Current location (optional)">
+                  <input
+                    type="text"
+                    value={editForm.currentLocation}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        currentLocation: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                    placeholder="Leave blank to clear"
+                  />
+                </Field>
+              </div>
+              <Field label="Additional notes from client (optional)">
+                <textarea
+                  value={editForm.lifeEventsNotes}
+                  onChange={(e) =>
+                    setEditForm((p) => ({
+                      ...p,
+                      lifeEventsNotes: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  placeholder="Leave blank to clear"
+                />
+              </Field>
+
+              {/* Life events editor */}
+              <Field label="Life events (add / remove)">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editForm.lifeEvents.map((evt) => (
+                    <span
+                      key={evt}
+                      className="flex items-center gap-1 px-3 py-1 text-xs rounded-full bg-cosmic-700/40 border border-cosmic-500/40"
+                    >
+                      {evt}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((p) => ({
+                            ...p,
+                            lifeEvents: p.lifeEvents.filter((e) => e !== evt),
+                          }))
+                        }
+                        className="text-white/50 hover:text-red-400 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newLifeEvent}
+                    onChange={(e) => setNewLifeEvent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = newLifeEvent.trim();
+                        if (val && !editForm.lifeEvents.includes(val)) {
+                          setEditForm((p) => ({
+                            ...p,
+                            lifeEvents: [...p.lifeEvents, val],
+                          }));
+                        }
+                        setNewLifeEvent("");
+                      }
+                    }}
+                    placeholder="Type and press Enter to add"
+                    className="flex-1 rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = newLifeEvent.trim();
+                      if (val && !editForm.lifeEvents.includes(val)) {
+                        setEditForm((p) => ({
+                          ...p,
+                          lifeEvents: [...p.lifeEvents, val],
+                        }));
+                      }
+                      setNewLifeEvent("");
+                    }}
+                    className="px-3 py-2 rounded-lg bg-cosmic-700/40 border border-cosmic-500/40 text-white/70 hover:text-white"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </Field>
+
+              {/* Regenerate option */}
+              <label className="flex items-center gap-3 cursor-pointer select-none mt-2">
+                <input
+                  type="checkbox"
+                  checked={regenAfterSave}
+                  onChange={(e) => setRegenAfterSave(e.target.checked)}
+                  className="w-4 h-4 accent-saffron-500"
+                />
+                <span className="text-sm text-white/80">
+                  Automatically regenerate reading after saving (calls Anthropic API)
+                </span>
+              </label>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(false)}
+                  disabled={busy === "/api/backoffice/edit-submission"}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveSubmission}
+                  disabled={busy === "/api/backoffice/edit-submission"}
+                >
+                  {busy === "/api/backoffice/edit-submission" ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Pencil className="w-4 h-4 mr-2" />
+                  )}
+                  {regenAfterSave ? "Save & regenerate" : "Save & reset pipeline"}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -346,6 +627,15 @@ function Meta({ k, v }: { k: string; v: React.ReactNode }) {
     <div>
       <div className="text-xs text-white/40">{k}</div>
       <div>{v}</div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs text-white/50">{label}</label>
+      {children}
     </div>
   );
 }

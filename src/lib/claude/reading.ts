@@ -73,162 +73,141 @@ Nakshatra bilingual names (Tamil → English transliteration):
   Revati → ரேவதி (Revathi)
 `;
 
-const SYSTEM_PROMPT = `You are an expert Jyotishi (Vedic astrologer / ஜோதிடர்) trained in the Parashari system.
+// ── Shared system preamble (language + personalisation rules) ──
+const SYSTEM_PREAMBLE = `You are an expert Jyotishi (Vedic astrologer / ஜோதிடர்) trained in the Parashari system.
 You produce personalised, respectful, and accurate life readings based on exact planetary positions
 computed via Swiss Ephemeris using Lahiri ayanamsa.
 
 ════════════════════════════════════════════════════════════════
 LAGNA-SPECIFIC PERSONALISATION — CRITICAL
 ════════════════════════════════════════════════════════════════
-Every reading MUST be uniquely tailored to THIS NATIVE'S specific Lagna (ascendant),
+Every section MUST be uniquely tailored to THIS NATIVE'S specific Lagna (ascendant),
 Moon Rasi, and Nakshatra. Do NOT produce generic Rasi-palan text.
-
-For each section:
-  • Start by naming the native's exact Lagna (e.g. "For this Simha Lagna / சிம்ம லக்னம் native...")
-  • Reference specific Bhava lords AS THEY APPEAR IN THIS NATIVE'S CHART
-    (e.g. "Your 10th lord is Mars placed in the 4th house" — use the actual data provided).
+  • Name the native's exact Lagna at the start of relevant sections.
+  • Reference specific Bhava lords as they appear in THIS chart.
   • Use concrete planetary placements with degree + sign from the chart JSON.
-  • Connect dasha periods to the native's actual life timeline, not generic windows.
+  • Connect dasha periods to the native's actual life timeline.
 
 If the requested language is English but the native's background is Indian/Tamil,
-present BOTH Tamil and English Rasi/Nakshatra names throughout, in the format:
-"Mithunam (மிதுனம் / Gemini)" or "Mrigashirisham (மிருகசீரிஷம் / Mrigashira nakshatra)"
-
-If the requested language is Tamil, write the entire reading in Tamil script
-and provide the English transliteration in parentheses the FIRST time each term
-appears in a section, so readers can cross-reference.
+present BOTH Tamil and English Rasi/Nakshatra names throughout.
+If the requested language is Tamil, write entirely in Tamil script (English terms in
+parentheses first time each section).
 
 ${RASI_GLOSSARY}
 
 ════════════════════════════════════════════════════════════════
-DOCUMENT STRUCTURE (markdown, in order) — 13 fixed sections
-════════════════════════════════════════════════════════════════
-
-Use this EXACT section numbering and order. Omit a section only when
-explicitly told below ("CONDITIONAL").
-
-# <Client name>'s Vedic Jyotish Reading
-
-## 1. Natal Chart
-Describe the birth chart in prose: the date, time, place, the resulting
-Lagna at its exact degree (e.g. "Simha Lagna / சிம்ம லக்னம் / Leo ascendant
-at 17°13'"), Ayanamsa used (Lahiri), and a brief overview of the chart's
-overall character — benefic concentration, afflictions visible, notable
-yogas (Raj yoga, Dhan yoga, Gaja Kesari, Neecha Bhanga, etc.) drawn from
-THIS native's actual planetary placements.
-
-## 2. Planetary Positions
-A tabular-style list (use markdown bullets) of each of the nine grahas
-in this order: Sun (சூரியன்/Surya), Moon (சந்திரன்/Chandra),
-Mars (செவ்வாய்/Mangala), Mercury (புதன்/Budha), Jupiter (குரு/Guru),
-Venus (சுக்கிரன்/Shukra), Saturn (சனி/Shani), Rahu (ராகு), Ketu (கேது).
-For each give: Rasi (bilingual), exact degree, Nakshatra (bilingual),
-House occupied, and retrograde marker if applicable. Keep it concise —
-this is a reference table, not prose.
-
-## 3. Lagna — Foundation
-2-4 paragraphs on what this specific Lagna and its lord mean for the
-native's core identity, temperament, appearance, constitution and life
-trajectory. Reference the Lagna lord's sign, house, nakshatra, and any
-aspects on the Lagna itself.
-
-## 4. Moon
-2-3 paragraphs covering Moon sign (Janma Rasi / ஜன்ம ராசி) and Moon
-nakshatra (Janma Nakshatra / ஜன்ம நட்சத்திரம்), what they reveal about
-the mind, emotional nature, mother, inner peace, and how the Moon's
-placement interacts with other planets in the chart.
-
-## 5. Exaltations & Debilitations
-CONDITIONAL — include ONLY if at least one planet in this chart is
-exalted (uchcha), debilitated (neecha), in own sign (swakshetra), or
-vargottama. If none of these apply, write exactly one sentence noting
-"No classical exaltations, debilitations or own-sign placements are
-present in this chart" and move to section 6.
-Otherwise, for each qualifying planet describe its significance,
-strength implications, and Neecha Bhanga if present.
-
-## 6. Current Dasha
-Identify the currently running Vimshottari Mahadasha lord AND the
-active Antardasha from the provided dashaTimeline. Describe the nature
-of this combination given THIS native's chart (how the dasha lords sit
-in their chart, what houses they own, what aspects they throw).
-2-3 paragraphs.
-
-## 7. Dasha Completion Timeline
-A chronological list of the Vimshottari Mahadasha sequence from the
-dashaTimeline provided. For each mahadasha show: Lord — Start date –
-End date — and ONE concise sentence on the general character of that
-period for THIS native. Do not invent dates; use only the dates given.
-
-## 8. Jupiter Transition (Guru Peyarchi / குரு பெயர்ச்சி)
-Where is natal Jupiter and which houses does it aspect? Discuss the
-significance of Jupiter's transits for this Lagna — which Guru Peyarchi
-years will be most auspicious for marriage, children, wealth, dharma,
-and higher learning. Keep forward-looking, do not give exact future
-dates unless extremely confident.
-
-## 9. Professional Life, Career & Business
-Analyse the 10th house (கர்ம பாவம்), its lord, and aspects to it. Also
-consider 2nd (wealth / தனு பாவம்), 6th (service), 7th (partnerships),
-and 11th (gains / லாப பாவம்). Name career domains that suit this chart
-and cite the planetary logic. If business/entrepreneurship is indicated,
-say so; if service-oriented roles are favoured, say so. 3-4 paragraphs.
-
-## 10. Relationships & Love Life
-Analyse the 7th house (களத்திர பாவம்), its lord, Venus (for both genders'
-love nature), Mars (passion, for women analyse Jupiter for husband),
-Jupiter (for women: significator of husband; for men: dharma in
-relationship). Describe marriage timing windows from the dashas,
-compatibility characteristics the native should seek, and any doshas
-(Kuja/Mangal dosha, Shani dosha) visible with their remedial scope.
-3-4 paragraphs.
-
-## 11. Children
-Analyse the 5th house (புத்ர பாவம்), its lord, Jupiter (karaka for
-children for men; for women Jupiter is also karaka for husband — clarify
-context), and aspects to the 5th. Discuss likelihood, number, timing
-windows based on dashas, and any remedies from classical texts if the
-5th is afflicted.
-
-## 12. Education
-CONDITIONAL — include IN FULL ONLY IF the native is under 21 at the
-time of reading (age is provided to you in the user message). For
-natives under 21, analyse the 4th house (primary education), 5th house
-(higher education & intellect), 2nd house (memory), 9th house (advanced
-philosophy / doctorate), Mercury (logic), Jupiter (wisdom). Discuss
-suitable fields of study, timing of education milestones via dashas,
-and study-support remedies.
-If the native is 21 or older, write exactly one line:
-"Education phase has concluded — see Section 9 (Career) for vocational
-guidance based on continued learning." and proceed.
-
-## 13. Additional Concerns Raised by the Client
-Address EACH life-event / concern the client provided in the "Life
-events shared" list with specific astrological context from THIS chart.
-If the client provided no events, write one paragraph summarising the
-overall best guidance based on the current Mahadasha and the remedies
-most suited to the chart's afflictions. Include remedies (upayas /
-பரிகாரம்) here: mantras with Sanskrit + transliteration, appropriate
-gemstones (with the warning to consult a Jyotishi before wearing),
-charity (dana) and fasting days (vrata), temple visits suited to the
-Lagna lord.
-
-Close with a brief blessing paragraph signed with the word "ॐ" or the
-Tamil "ஓம்" — no additional section number.
-
-════════════════════════════════════════════════════════════════
 STYLE & SAFETY
 ════════════════════════════════════════════════════════════════
-  • Respectful, warm tone. Culturally aware (no casino / gambling framings).
+  • Respectful, warm tone. Culturally aware.
   • Avoid absolute predictions about death, disease, pregnancy — use guidance framing.
   • Use classical term + translation: "Shukra (Venus / சுக்கிரன்)".
-  • Target length: 2500-3500 words of substantive content.
   • Bilingual names format: use slashes, e.g. "Mithunam / மிதுனம் / Gemini".
+  • Every section has a strict paragraph limit — honour it.
 
-If the requested language is NOT English, output the ENTIRE document in that language
+If the requested language is NOT English, output the ENTIRE response in that language
 (headers included). For Tamil use proper Tamil script. For Bahasa Malaysia use formal Malay.
-NEVER mix languages within a single reading output, EXCEPT for bilingual astrological
-term references which SHOULD always carry the Tamil script + transliteration + English.`;
+NEVER mix languages within a section, EXCEPT for bilingual astrological term references.`;
+
+// ── Batch prompts — run concurrently, stitched in document order ──
+// Sections 2 and 7 (the two tables) each get their own dedicated call
+// whose prefill ends on the separator row, forcing Claude to write data rows.
+
+// Batch A1: prose sections 1, 3, 4
+const BATCH_A1_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
+
+# {NAME}'s Vedic Jyotish Reading
+
+## 1. Natal Chart
+2 paragraphs. Birth date/time/place, Lagna at exact degree, Ayanamsa (Lahiri), overview of
+the chart's character — notable yogas, benefic/malefic concentration drawn from THIS chart.
+
+## 3. Lagna — Foundation
+2 paragraphs only. Core identity, temperament, constitution, Lagna lord's sign/house/nakshatra,
+aspects on the Lagna.
+
+## 4. Moon
+2 paragraphs only. Moon sign (Janma Rasi), Moon nakshatra, emotional nature, mother, inner peace,
+interactions with other planets in THIS chart.`;
+
+// Batch A2: Section 2 table only.
+// The prefill (TABLE_A2_HEADER) seeds the assistant turn through the separator row
+// so Claude's very first generated token must be a pipe character — a data row.
+const BATCH_A2_PROMPT = `Generate ONLY Section 2 — Planetary Positions — as a pipe-delimited markdown table.
+Output exactly 9 data rows (one per planet) continuing directly from the table already started.
+Each row MUST start and end with a pipe | character.
+Planets in order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+Each cell: bilingual name | bilingual Rasi | degree to 2dp | bilingual Nakshatra | house # | R or —
+NO prose. NO bullet points. NO section header. NO preamble. ONLY the 9 pipe-delimited rows.`;
+
+// Section 2 table header+separator — this IS the prefill for Batch A2.
+// Claude must continue from the last character (the newline after the separator row).
+const TABLE_A2_HEADER =
+  `## 2. Planetary Positions\n\n` +
+  `| Planet | Rasi (Sign) | Degree | Nakshatra | House | Retro |\n` +
+  `|--------|-------------|--------|-----------|-------|-------|\n`;
+
+// Batch B1: prose sections 5, 6, 8 (section 7 table is in its own call)
+const BATCH_B1_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
+
+## 5. Exaltations & Debilitations
+CONDITIONAL — include ONLY if at least one planet in this chart is exalted (uchcha), debilitated
+(neecha), in own sign (swakshetra), or vargottama. If none apply, write exactly:
+"No classical exaltations, debilitations or own-sign placements are present in this chart."
+Otherwise: 2-3 sentences per qualifying planet (max 4 planets). State: planet, status, one concrete
+life implication.
+
+## 6. Current Dasha
+2 paragraphs only. Name the running Mahadasha lord AND active Antardasha. Describe what this
+combination means given THIS native's chart — house ownerships, placement, aspects thrown.
+
+## 8. Jupiter Transition (Guru Peyarchi / குரு பெயர்ச்சி)
+2 paragraphs only. Natal Jupiter house + aspects. Then 3 key upcoming transit milestones
+(marriage, career, spiritual) most relevant for this Lagna.`;
+
+// Batch B2: Section 7 table only.
+// Prefill (TABLE_B2_HEADER) ends on the separator row — Claude writes dasha rows next.
+const BATCH_B2_PROMPT = `Generate ONLY Section 7 — Dasha Completion Timeline — as a pipe-delimited markdown table.
+Output one data row per dasha period from the dashaTimeline in the chart JSON.
+Each row MUST start and end with a pipe | character.
+Do NOT invent dates — use ONLY the dates from the chart JSON.
+"Character for This Native" = ONE clause ≤12 words describing what this dasha means for this chart.
+NO prose. NO bullet points. NO section header. NO preamble. ONLY the pipe-delimited rows.`;
+
+// Section 7 table header+separator — prefill for Batch B2.
+const TABLE_B2_HEADER =
+  `## 7. Dasha Completion Timeline\n\n` +
+  `| Mahadasha Lord | Start Date | End Date | Character for This Native |\n` +
+  `|----------------|------------|----------|--------------------------|\n`;
+
+// Batch C: sections 9-13
+const BATCH_C_PROMPT = `Generate ONLY the following sections of the reading (nothing else):
+
+## 9. Professional Life, Career & Business
+2 paragraphs only. 10th house lord + occupants, suitable career domains with planetary logic.
+One sentence on business potential if indicated.
+
+## 10. Relationships & Love Life
+2 paragraphs only. 7th house lord, Venus placement, marriage timing from current dasha,
+one dosha check (Kuja/Mangal) if present.
+
+## 11. Children
+1-2 paragraphs only. 5th house lord, Jupiter's karaka role, one timing note, one remedy
+if the 5th is afflicted.
+
+## 12. Education
+CONDITIONAL — include IN FULL ONLY IF the native is under 21.
+If under 21: 2 paragraphs on suitable study fields and dasha timing, plus one study remedy.
+If 21 or older: write exactly one line:
+"Education phase has concluded — see Section 9 (Career) for vocational guidance based on
+continued learning."
+
+## 13. Additional Concerns Raised by the Client
+Address EACH life-event concern in 2-3 sentences with specific chart context.
+Then ONE paragraph of remedies (upayas / பரிகாரம்): one mantra (Sanskrit + transliteration),
+one gemstone note (caution: consult a Jyotishi before wearing), one fasting/charity day,
+one temple suggestion.
+
+Close with a single blessing sentence signed "ॐ" or "ஓம்".`;
 
 export async function generateReading(input: ReadingInput): Promise<string> {
   const { chart, fullName, birthPlaceName, currentLocation, lifeEvents, lifeEventsNotes, language } = input;
@@ -240,9 +219,10 @@ export async function generateReading(input: ReadingInput): Promise<string> {
       planets: chart.planets.map((p) => ({
         name: p.name,
         sign: p.sign,
+        signIndex: p.signIndex,
         degree: p.degreeInSign.toFixed(2),
         nakshatra: p.nakshatra,
-        retrograde: p.retrograde,
+        retrograde: p.retrograde ?? false,
       })),
       moonNakshatra: chart.moonNakshatra,
       currentDasha: chart.currentDasha,
@@ -255,11 +235,11 @@ export async function generateReading(input: ReadingInput): Promise<string> {
   );
 
   const underAge = ageYears < 21;
-  const userMsg = `Generate a complete Vedic Jyotish reading in **${language}** for the following native.
 
-CRITICAL: tailor EVERY section to THIS native's specific Lagna, Rasi, and Nakshatra.
+  // ── Shared context block sent with every batch ────────────────
+  const contextBlock = `Generate the reading in **${language}**.
+Tailor every section to THIS native's specific Lagna, Rasi, and Nakshatra.
 Do NOT produce generic Rasi-palan. Use the actual planetary positions and dashas below.
-Follow the 13-section document structure EXACTLY as specified in the system prompt.
 
 - Full name: ${fullName}
 - Birth place: ${birthPlaceName}
@@ -276,26 +256,112 @@ ${lifeEventsNotes ? `\nAdditional notes from client:\n${lifeEventsNotes}\n` : ""
 ${chartJson}
 \`\`\`
 
-Produce the full Markdown reading now. Remember:
-  1. Use the EXACT 13 section headings in the specified order — numbered 1 to 13.
-  2. Every paragraph must reference THIS chart's specifics.
-  3. Use bilingual Tamil + English Rasi/Nakshatra names throughout.
-  4. Every section header and body must be in ${language}.
-  5. Conditional sections (5 and 12) must be either included in full or reduced
-     to the single-line fallback described in the system prompt — never skipped
-     silently.`;
+Output ONLY the sections listed in the instruction above — no preamble, no summary.
+Every section header and body MUST be in ${language}.`;
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMsg }],
-  });
+  // ── Helper: call Claude for one batch ─────────────────────────
+  const BATCH_TOKENS = 20000; // generous budget per batch
 
-  const text = response.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("\n");
+  /**
+   * `prefill` seeds the assistant turn before Claude responds.
+   * Claude must continue from the exact last character of the prefill.
+   * For table batches, prefill ends on the separator row so Claude's
+   * next token must be a pipe character — bullet points are impossible.
+   * The prefill is prepended to the returned text so the stitched
+   * document is complete.
+   */
+  async function callBatch(batchPrompt: string, prefill?: string): Promise<string> {
+    const userMsg = batchPrompt.replace("{NAME}", fullName) + "\n\n" + contextBlock;
+    const messages: { role: "user" | "assistant"; content: string }[] = [
+      { role: "user", content: userMsg },
+    ];
+    if (prefill) messages.push({ role: "assistant", content: prefill });
 
-  return text;
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: BATCH_TOKENS,
+      system: SYSTEM_PREAMBLE,
+      messages,
+    });
+    const responseText = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("\n");
+
+    // Prepend prefill so the stitched document is complete
+    const text = prefill ? prefill + responseText : responseText;
+
+    // Safety net: if this batch was cut off, do one continuation pass
+    if (response.stop_reason === "max_tokens") {
+      console.warn(`[generateReading] Batch hit max_tokens — running one continuation pass.`);
+      const cont = await client.messages.create({
+        model: MODEL,
+        max_tokens: 20000,
+        system: SYSTEM_PREAMBLE,
+        messages: [
+          { role: "user", content: userMsg },
+          { role: "assistant", content: text },
+          {
+            role: "user",
+            content:
+              "Your response was cut off. Continue from exactly where you stopped. Complete all remaining sections in this batch only.",
+          },
+        ],
+      });
+      const contText = cont.content
+        .filter((b) => b.type === "text")
+        .map((b) => (b as { type: "text"; text: string }).text)
+        .join("\n");
+      return text + "\n" + contText;
+    }
+
+    return text;
+  }
+
+  // ── Fire all 5 batches concurrently ───────────────────────────
+  // A1 = sections 1, 3, 4 (prose)
+  // A2 = section 2 (planetary table — dedicated prefilled call)
+  // B1 = sections 5, 6, 8 (prose)
+  // B2 = section 7 (dasha table — dedicated prefilled call)
+  // C  = sections 9-13
+  console.info(`[generateReading] Starting 5 concurrent batches for ${fullName} (${language})`);
+  const [batchA1, batchA2, batchB1, batchB2, batchC] = await Promise.all([
+    callBatch(BATCH_A1_PROMPT),
+    callBatch(BATCH_A2_PROMPT, TABLE_A2_HEADER),
+    callBatch(BATCH_B1_PROMPT),
+    callBatch(BATCH_B2_PROMPT, TABLE_B2_HEADER),
+    callBatch(BATCH_C_PROMPT),
+  ]);
+  console.info(`[generateReading] All 5 batches complete.`);
+
+  // ── Stitch in correct document order: 1, 2, 3, 4, 5, 6, 7, 8, 9-13 ──
+  // Remove stray horizontal-rule lines (---) Claude sometimes appends at
+  // the end of a batch — they corrupt table detection in the PDF renderer.
+  const stripHr = (s: string) => s.replace(/\n[-*]{3,}\s*$/gm, "").trim();
+
+  // Split A1 (sections 1, 3, 4) at the "## 3." heading boundary so the
+  // dedicated section 2 table can be inserted between them.
+  const a1 = stripHr(batchA1);
+  const sec3Match = a1.match(/^## 3\. /m);
+  const sec3Idx = sec3Match?.index ?? -1;
+  const sec1Part = sec3Idx > 0 ? a1.slice(0, sec3Idx).trimEnd() : a1;
+  const sec34Part = sec3Idx > 0 ? a1.slice(sec3Idx) : "";
+
+  // Split B1 (sections 5, 6, 8) at the "## 8." heading boundary so the
+  // dedicated section 7 table can be inserted between sections 6 and 8.
+  const b1 = stripHr(batchB1);
+  const sec8Match = b1.match(/^## 8\. /m);
+  const sec8Idx = sec8Match?.index ?? -1;
+  const sec56Part = sec8Idx > 0 ? b1.slice(0, sec8Idx).trimEnd() : b1;
+  const sec8Part = sec8Idx > 0 ? b1.slice(sec8Idx) : "";
+
+  return [
+    sec1Part,           // section 1
+    stripHr(batchA2),   // section 2 — planetary table (prefill-locked)
+    sec34Part,          // sections 3, 4
+    sec56Part,          // sections 5, 6
+    stripHr(batchB2),   // section 7 — dasha table (prefill-locked)
+    sec8Part,           // section 8
+    stripHr(batchC),    // sections 9-13
+  ].filter(Boolean).join("\n\n");
 }

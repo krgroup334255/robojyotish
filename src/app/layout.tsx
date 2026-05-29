@@ -19,11 +19,11 @@ const notoTamil = Noto_Sans_Tamil({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — AI Jyotish Reading | Vedic Astrology from RM19.90`,
+    default: `${SITE_NAME} — AI Jyotish Reading | Vedic Astrology`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Get an accurate, AI-powered Hindu Jyotish (Vedic astrology) reading delivered as a downloadable PDF. Birth chart, dasha, nakshatra & life guidance — in English & Tamil. From RM19.90. Trusted by Malaysian, Singaporean & Indian clients.",
+    "Get an accurate, AI-powered Hindu Jyotish (Vedic astrology) reading delivered as a downloadable PDF. Birth chart, dasha, nakshatra & life guidance — in English & Tamil. Trusted by Malaysian, Singaporean & Indian clients.",
   keywords: [
     "AI jyotish reading",
     "Hindu jyotish online",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "AI Jyotish Reading — Vedic Astrology PDF from RM19.90",
+    title: "AI Jyotish Reading — Vedic Astrology PDF",
     description:
       "Accurate AI-powered Vedic astrology reading. PDF delivered in English & Tamil. Malaysia, Singapore & India.",
     locale: "en_MY",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Jyotish Reading from RM19.90 — RoboJyotish",
+    title: "AI Jyotish Reading — RoboJyotish",
     description:
       "Vedic astrology PDF in English & Tamil, powered by AI. For Malaysia, Singapore & India.",
   },
@@ -108,7 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     offers: {
       "@type": "Offer",
       priceCurrency: "MYR",
-      price: "19.90",
+      price: "0",
       availability: "https://schema.org/InStock",
       url: `${SITE_URL}/reading`,
     },
@@ -135,7 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         name: "How much does a reading cost?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "RM19.90 per reading — one of the most affordable Vedic astrology readings anywhere in the world.",
+          text: "Readings are currently free. Sign in and submit your birth details to get started.",
         },
       },
       {

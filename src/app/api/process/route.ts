@@ -1,12 +1,18 @@
 /**
  * POST /api/process — runs the post-payment pipeline.
- * Body: { readingId: string }
- * Steps: compute chart → generate readings per language → save to DB.
- * Back-office review then uploads/publishes PDFs via /api/backoffice/release.
  *
- * This route is called from the client processing page. It streams SSE-like
- * status via a JSON array but for simplicity we return step-by-step via a
- * server action on poll. The client polls GET /api/reading/[id] for status.
+ * Body: { readingId: string; language?: string; finalize?: boolean }
+ *
+ * When `language` is provided, only that one language is generated.
+ * This allows the client to call once per language so each call gets
+ * its own full 300 s Vercel timeout budget — preventing mid-sentence
+ * truncation caused by multi-language sequential generation in one call.
+ *
+ * When `finalize` is true (sent after the last language), the reading
+ * is moved to "pending_review".
+ *
+ * Legacy call (no language / no finalize) still works: generates ALL
+ * languages and finalises in one shot (used by back-office regenerate).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
@@ -20,10 +26,16 @@ const LANG_MAP: Record<string, string> = {
 };
 
 export const runtime = "nodejs";
-export const maxDuration = 300; // 5 min
+export const maxDuration = 300; // 5 min — one language per call fits comfortably
 
 export async function POST(req: NextRequest) {
-  const { readingId } = await req.json();
+  const body = await req.json();
+  const { readingId, language: requestedLangCode, finalize } = body as {
+    readingId?: string;
+    language?: string;
+    finalize?: boolean;
+  };
+
   if (!readingId) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const supabase = adminClient();
@@ -35,13 +47,9 @@ export async function POST(req: NextRequest) {
   if (error || !r) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
+
   // Allow retries from back-office: accept paid / computing_chart / generating / failed
-  const resumableStatuses = [
-    "paid",
-    "computing_chart",
-    "generating",
-    "failed",
-  ];
+  const resumableStatuses = ["paid", "computing_chart", "generating", "failed"];
   if (!resumableStatuses.includes(r.status)) {
     return NextResponse.json(
       { error: "not_paid", status: r.status },
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1. Compute chart (reuse if already present)
+  // ── 1. Compute chart (reuse if already present) ───────────────
   let chart = r.chart_data;
   if (!chart) {
     await supabase
@@ -78,20 +86,25 @@ export async function POST(req: NextRequest) {
       .from("readings")
       .update({ chart_data: chart, status: "generating" })
       .eq("id", readingId);
-  } else {
+  } else if (r.status !== "generating") {
     await supabase
       .from("readings")
       .update({ status: "generating" })
       .eq("id", readingId);
   }
 
-  // 2. Generate readings per language. Save INCREMENTALLY so a timeout
-  //    doesn't lose prior languages.
-  const languages: string[] = r.languages;
+  // ── 2. Determine which languages to generate this call ────────
+  const allLanguages: string[] = r.languages;
   const readings: Record<string, string> = { ...(r.readings ?? {}) };
 
-  for (const code of languages) {
-    // Skip if already generated (idempotent retry)
+  // If a specific language code was requested, process only that one.
+  // Otherwise (legacy/backoffice call) process all.
+  const languagesToProcess = requestedLangCode
+    ? allLanguages.filter((c) => c === requestedLangCode)
+    : allLanguages;
+
+  for (const code of languagesToProcess) {
+    // Skip if already generated (idempotent)
     if (readings[code] && readings[code].length > 100) continue;
 
     const label = LANG_MAP[code] ?? code;
@@ -111,18 +124,24 @@ export async function POST(req: NextRequest) {
       readings[code] = `[Generation failed: ${(e as Error).message}]`;
     }
 
-    // Incremental save after EACH language
+    // Incremental save after each language
     await supabase
       .from("readings")
       .update({ readings })
       .eq("id", readingId);
   }
 
-  // 3. Mark pending_review once all done.
-  await supabase
-    .from("readings")
-    .update({ status: "pending_review" })
-    .eq("id", readingId);
+  // ── 3. Finalize when all languages are done ───────────────────
+  // In per-language mode the client sends finalize=true on the last call.
+  // In legacy (all-at-once) mode we always finalize here.
+  const shouldFinalize = finalize === true || !requestedLangCode;
+  if (shouldFinalize) {
+    await supabase
+      .from("readings")
+      .update({ status: "pending_review" })
+      .eq("id", readingId);
+    return NextResponse.json({ ok: true, status: "pending_review" });
+  }
 
-  return NextResponse.json({ ok: true, status: "pending_review" });
+  return NextResponse.json({ ok: true, status: "generating" });
 }

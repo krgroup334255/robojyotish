@@ -78,22 +78,45 @@ export default function ProcessingPage() {
   useEffect(() => {
     let alive = true;
 
+    /**
+     * Trigger the pipeline per-language so each Claude call gets its own
+     * full 300 s Vercel timeout budget. Calling one big request for all
+     * languages risks hitting the timeout mid-generation.
+     */
     async function triggerPipeline() {
       attempts.current += 1;
       try {
-        const r = await fetch("/api/process", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ readingId: id }),
-        });
-        if (!r.ok) {
-          const d = await r.json().catch(() => ({}));
-          // If not_paid, poll a bit more — payment webhook may be delayed
-          if (d?.error === "not_paid" && attempts.current < 5) {
-            triggered.current = false;
-            return;
+        // Fetch the reading to get the language list
+        const meta = await fetch(`/api/reading/${id}`, { cache: "no-store" });
+        if (!meta.ok) throw new Error(`Could not fetch reading metadata: HTTP ${meta.status}`);
+        const reading = await meta.json();
+
+        if (reading.error === "not_paid" && attempts.current < 5) {
+          triggered.current = false;
+          return;
+        }
+
+        const languages: string[] = reading.languages ?? ["en"];
+
+        // Process one language per API call, each with its own 300 s budget
+        for (let li = 0; li < languages.length; li++) {
+          if (!alive) return;
+          const code = languages[li];
+          const isLast = li === languages.length - 1;
+
+          const r = await fetch("/api/process", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              readingId: id,
+              language: code,
+              finalize: isLast,
+            }),
+          });
+          if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            throw new Error(d?.message ?? d?.error ?? `HTTP ${r.status}`);
           }
-          throw new Error(d?.message ?? d?.error ?? `HTTP ${r.status}`);
         }
       } catch (e) {
         if (alive) setError((e as Error).message);
