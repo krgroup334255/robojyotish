@@ -1,27 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // pdfkit + sweph are native/node-only; keep them external so Next doesn't
-  // try to bundle them for client and they can read their own asset files.
   experimental: {
+    // pdfkit + sweph are native/node-only; keep them external so Next doesn't
+    // try to bundle them for client and they can read their own asset files.
     serverComponentsExternalPackages: ["pdfkit", "sweph"],
-  },
 
-  // Ensure our font + ephe assets end up in the Vercel deployment bundle.
-  // Without this, Vercel tree-shakes files outside `app/` and PDF/chart
-  // generation fails at runtime with "ENOENT" on the missing TTF or .se1.
-  outputFileTracingIncludes: {
-    "/api/backoffice/release": [
-      "./public/fonts/**/*",
-      "./src/lib/pdf/fonts/**/*",
-      "./ephe/**/*",
-    ],
-    "/api/backoffice/preview": [
-      "./public/fonts/**/*",
-      "./src/lib/pdf/fonts/**/*",
-    ],
-    "/api/process": [
-      "./ephe/**/*",
-    ],
+    // Ensure font + ephe assets end up in the Vercel deployment bundle.
+    // outputFileTracingIncludes is the Next.js 14 experimental API for this.
+    outputFileTracingIncludes: {
+      "/api/backoffice/release": [
+        "./public/fonts/**/*",
+        "./src/lib/pdf/fonts/**/*",
+        "./ephe/**/*",
+      ],
+      "/api/backoffice/preview": [
+        "./public/fonts/**/*",
+        "./src/lib/pdf/fonts/**/*",
+      ],
+      "/api/process": [
+        "./ephe/**/*",
+      ],
+    },
   },
 
   webpack: (config, { isServer }) => {
