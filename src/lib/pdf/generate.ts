@@ -26,8 +26,13 @@ import { SITE_NAME } from "@/lib/utils";
 // because the filesystem layout inside a lambda differs from process.cwd().
 function loadFont(filename: string): Buffer {
   const candidates = [
+    // Vercel lambda root — filePathMap copies fonts relative to /var/task
+    path.join("/var/task", "public/fonts", filename),
+    path.join("/var/task", "src/lib/pdf/fonts", filename),
+    // process.cwd() (works locally and on some Vercel configs)
     path.join(process.cwd(), "public/fonts", filename),
     path.join(process.cwd(), "src/lib/pdf/fonts", filename),
+    // __dirname-relative (varies by bundler output structure)
     path.join(__dirname, "fonts", filename),
     path.join(__dirname, "../fonts", filename),
     path.join(__dirname, "../../lib/pdf/fonts", filename),
